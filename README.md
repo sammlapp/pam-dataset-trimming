@@ -45,12 +45,18 @@ For `trim` to work please provide a CSV sheet containing the following columns:
 
 ## 3. Usage
 
-Usage:
+It is recommended to use the `--verbose` flag to print actions performed on each file:
 ```
-python -i trim.py /path/to/target/folder/ --verbose --make-copies
+python trim.py /path/to/target/folder/ --verbose
 ```
-Custom deployment sheet:
+
+The `--make-copies` flag causes files to be copied into target folders preserving the  originals. 
 ```
-python -i trim.py /path/to/target/folder/ --rec-sheet my_deployment_sheet.csv  --pick-col my_pick_up_col_name --depl-col my_deployment_col_name --depl-col my_subirs_col_name --time-str '%m/%d/%y %H:%M' --verbose
+python trim.py /path/to/target/folder/ --verbose --make-copies
+```
+
+It is also possible to use CLI arguments to the specify custom deployment sheet formats:
+```
+pythontrim.py /path/to/target/folder/ --rec-sheet my_deployment_sheet_name.csv  --pick-col my_pick_up_col_name --depl-col my_deployment_col_name --depl-col my_subirs_col_name --time-str '%m/%d/%y %H:%M' --verbose
 ```
 
