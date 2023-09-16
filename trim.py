@@ -16,23 +16,17 @@ from datetime import datetime, timezone, timedelta
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("folder",  type=str, default='./', help = 'Path to audio files.')
-    parser.add_argument("--make-copies", dest = 'copy', action="store_true", default=False, help = "Create a trimmed copy of original files in [dest]. Default behavior is to move files.")
-    
-    parser.add_argument("--rec-sheet", dest = "sheet", type=str, default=None, help = 'Path to sheet with reorcordings metadata.')
+    parser.add_argument("--rec-sheet", dest = "sheet", type=str, default='deployment-sheet.csv', help = 'Filename for recordings sheet in [folder] containing reorcordings metadata.')
     
     parser.add_argument("--pick-col",  dest  = 'pick_col', type=str, default='pickup_date', help = 'Pick-up time column name in [sheet]')
     parser.add_argument("--depl-col",  dest  = 'depl_col', type=str, default='dropoff_date', help = 'Subirectories name column name in [sheet]')
     parser.add_argument("--dirs-col",  dest  = 'dirs_col', type=str, default='card_code', help = 'Deployment time column name in [sheet]')
-
     parser.add_argument("--time-str",  dest  = 'time_str', type=str, default='%m/%d/%y %H:%M', help = 'Subirectories name column name in [sheet]')
 
+    parser.add_argument("--make-copies", dest = 'copy', action="store_true", default=False, help = "Create a trimmed copy of original files in [dest]. Default behavior is to move files.")
     parser.add_argument("--verbose", action="store_true", default=False, help = "Don't export outputs.")
 
     return parser.parse_args()
-
-#---------------------------------------------------------------------------------
-# 
-
 
 #---------------------------------------------------------------------------------
 # Functions
@@ -59,8 +53,6 @@ def parse_filename(filename, file_name_separator = '_' ):
 
 
 #---------------------------------------------------------------------------------
-# Main function
-
 def trim(directoty, 
          recordings_sheet,
          folder_var = 'card_code',
@@ -72,7 +64,16 @@ def trim(directoty,
          verbose = True):
     """Loop through sub-directories (typically storing different cards/recorders) and files and remove segments of files outside of desired range.
     
-    .... [ADD ARGS HERE]
+    Args:
+        directoty (str): Path to target directory containing subfolders with audio recordings.
+        recordings_sheet (str): Path to recordings sheet containing recordings metadata.
+        folder_var (str, optional): Column in [recordings_sheet] containing sub-directories names. Defaults to 'card_code'.
+        deployment_time_var (str, optional): Column in [recordings_sheet] containing ARU deployment datetime. Defaults to 'dropoff_date'.
+        pickup_time_var (str, optional): Column in [recordings_sheet] containing ARU pick-up datetime. Defaults to 'pickup_date'.
+        time_str_format (str, optional): Column in [recordings_sheet] datetime format. Defaults to '%m/%d/%y %H:%M'.
+        audio_formats (list, optional): Possible audio formats. Defaults to ['mp3', 'wav','WAV'].
+        copy_files (bool, optional): If true creates copies of files in destination folder, if false move files. Defaults to False.
+        verbose (bool, optional): Print actions for each file. Defaults to True.
     
     Returns:
             Saves trimmed versions of audio files in [destination_dir]
