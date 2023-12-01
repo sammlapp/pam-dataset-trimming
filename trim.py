@@ -26,6 +26,8 @@ def parse_args():
     parser.add_argument("--make-copies", dest = 'copy', action="store_true", default=False, help = "Create a trimmed copy of original files in [dest]. Default behavior is to move files.")
     parser.add_argument("--verbose", action="store_true", default=False, help = "Don't export outputs.")
 
+    parser.add_argument("--delay",  type=int, default=None, help = 'Add a delay in hours to deployment time and subtrackt from pickup time.')
+
     return parser.parse_args()
 
 #---------------------------------------------------------------------------------
@@ -61,8 +63,9 @@ def trim(directoty,
          time_str_format = '%m/%d/%y %H:%M',
          audio_formats = ['mp3', 'wav','WAV'],
          copy_files = False, 
-         verbose = True):
-    """Loop through sub-directories (typically storing different cards/recorders) and files and remove segments of files outside of desired range.
+         verbose = True,
+         delay_h = None,):
+    """Loop through sub-directories (typically storing different cards/recorders) and files and remove files outside of desired range.
     
     Args:
         directoty (str): Path to target directory containing subfolders with audio recordings.
@@ -121,6 +124,10 @@ def trim(directoty,
             row_i = df[df[folder_var] == dir_i_name]
             deployment_time = datetime.strptime(row_i[deployment_time_var].item(), time_str_format).replace(tzinfo=timezone.utc)
             pickup_time = datetime.strptime(row_i[pickup_time_var].item(), time_str_format).replace(tzinfo=timezone.utc)
+            
+            if delay_h:
+                deployment_time = deployment_time + datetime.timedelta(hours = delay_h)
+                pickup_time = pickup_time - datetime.timedelta(hours = delay_h)
             
             # Loop through files individually to check if in period -------------------
             n_files_i = len(audio_files_i)
