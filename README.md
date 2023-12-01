@@ -1,8 +1,6 @@
 # trim
 
-**trim.py** is a script used to remove (archive) audio recording files outside a specified period from a target folder. This is designed as part of a management and cleaning pipeline for data collected using Autonomous recording units (ARUs). While intended to monitor soundscapes and wildlife sounds, ARUs may record field teams performing installation, recovery, or maintenance. This script is designed to use field deployment logs to remove these recordings. 
-
-To use this script, please make sure the target directory and deployment sheet in CSV format follow the standards below. 
+**trim.py** is a script used to remove (archive in a different folder) audio recording files outside a specified period. This is designed as part of a management and cleaning pipeline for data collected using Autonomous recording units (ARUs). While intended to monitor soundscapes and wildlife sounds, ARUs may record field teams performing installation, recovery, or maintenance. This script is designed to use deployment log data containing the date and time of these activities to remove these recordings. 
 
 By default, `python trim.py folder/` will create 3 destination folders in `folder/` and move files accordingly. 
 
@@ -33,7 +31,6 @@ The `trim` assumes audio files are organized in subdirectories. It also depends 
 The original subdirectory structure is preserved in destination folders. 
 
 The script will use audio file metadata to infer the beginning and end of recordings. If the file contains no metadata or it cannot be loaded, it will try to parse the filename assuming it follows the `yyyymmdd_hhmmss.audio_extension` standard, for example `20220728_013000.WAV`.
-
 
 ## 2. Deployment sheet
 
