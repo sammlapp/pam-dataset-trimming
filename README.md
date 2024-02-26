@@ -14,7 +14,7 @@ For more information, please visit [https://www.kitzeslab.org/](https://www.kitz
 
 ## 1. Folder structure
 
-The `trim` assumes audio files are organized in subdirectories. It also depends on a deployment sheet in CSV format in the parent folder. 
+The `trim` assumes audio files are organized in subdirectories and a file named `deployment-sheet.csv` in the parent folder containing columns for deployment and/or pick-up dates and times.
 
 ```
 └── folder/
@@ -47,13 +47,22 @@ It is recommended to use the `--verbose` flag to print actions performed on each
 python trim.py /path/to/target/folder/ --verbose
 ```
 
-The `--make-copies` flag causes files to be copied into target folders preserving the  originals. 
-```
-python trim.py /path/to/target/folder/ --verbose --make-copies
-```
+Additional command line arguments:
 
-It is also possible to use CLI arguments to the specify custom deployment sheet formats:
-```
-pythontrim.py /path/to/target/folder/ --rec-sheet my_deployment_sheet_name.csv  --pick-col my_pick_up_col_name --depl-col my_deployment_col_name --depl-col my_subirs_col_name --time-str '%m/%d/%y %H:%M' --verbose
-```
+`--rec-sheet`: Custom filename for recordings sheet in parent folder containing recordings metadata.
+
+`--pick-col`: Custom pick-up time column name in [`rec-sheet`]
+
+`--depl-col`: Custom deployment time column name in [`rec-sheet`]
+
+`--dirs-col`: Custom sub-directories name column name in [`rec-sheet`]
+
+`--time-str` Dates formatting string. Defaults to `'%m/%d/%y %H:%M'`
+
+`--make-copies`: Create trimmed copies of original files in the parent folder. The default behavior is to move files. This is useful for testing prior to moving the original files.
+
+`--verbose`: Print performed actions while running the script.
+
+`--delay`: Add a delay in hours to deployment time and subtract from pickup time.
+
 
