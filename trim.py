@@ -16,17 +16,17 @@ from datetime import datetime, timezone, timedelta
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("folder",  type=str, default='./', help = 'Path to audio files.')
-    parser.add_argument("--rec-sheet", dest = "sheet", type=str, default='deployment-sheet.csv', help = 'Filename for recordings sheet in [folder] containing reorcordings metadata.')
+    parser.add_argument("--rec-sheet", dest = "sheet", type=str, default='deployment-sheet.csv', help = 'Filename for recordings sheet in [folder] containing recordings metadata.')
     
-    parser.add_argument("--pick-col",  dest  = 'pick_col', type=str, default='pickup_date', help = 'Pick-up time column name in [sheet]')
-    parser.add_argument("--depl-col",  dest  = 'depl_col', type=str, default='dropoff_date', help = 'Subirectories name column name in [sheet]')
-    parser.add_argument("--dirs-col",  dest  = 'dirs_col', type=str, default='card_code', help = 'Deployment time column name in [sheet]')
-    parser.add_argument("--time-str",  dest  = 'time_str', type=str, default='%m/%d/%y %H:%M', help = 'Subirectories name column name in [sheet]')
+    parser.add_argument("--pick-col",  dest  = 'pick_col', type=str, default='pickup_date', help = 'Pick-up time column name in [rec-sheet]')
+    parser.add_argument("--depl-col",  dest  = 'depl_col', type=str, default='dropoff_date', help = 'Deployment time column name in [rec-sheet]')
+    parser.add_argument("--dirs-col",  dest  = 'dirs_col', type=str, default='card_code', help = 'Sub-directories name column name in [rec-sheet]')
+    parser.add_argument("--time-str",  dest  = 'time_str', type=str, default='%m/%d/%y %H:%M', help = 'Dates formatting string.')
 
-    parser.add_argument("--make-copies", dest = 'copy', action="store_true", default=False, help = "Create a trimmed copy of original files in [dest]. Default behavior is to move files.")
-    parser.add_argument("--verbose", action="store_true", default=False, help = "Don't export outputs.")
+    parser.add_argument("--make-copies", dest = 'copy', action="store_true", default=False, help = "Create a trimmed copy of original files in [folder]. Default behavior is to move files.")
+    parser.add_argument("--verbose", action="store_true", default=False, help = "Print performed actions while running the script.")
 
-    parser.add_argument("--delay",  type=int, default=None, help = 'Add a delay in hours to deployment time and subtrackt from pickup time.')
+    parser.add_argument("--delay",  type=int, default=None, help = 'Add a delay in hours to deployment time and subtract from pickup time.')
 
     return parser.parse_args()
 
