@@ -14,7 +14,7 @@ For more information, please visit [https://www.kitzeslab.org/](https://www.kitz
 
 ## 1. Folder structure
 
-The `trim` assumes audio files are organized in subdirectories. It also depends on a deployment sheet in CSV format in the parent folder. 
+The `trim` assumes audio files are organized in subdirectories and a file named `deployment-sheet.csv` in the parent folder containing columns for deployment and/or pick-up dates and times.
 
 ```
 └── folder/
@@ -47,13 +47,4 @@ It is recommended to use the `--verbose` flag to print actions performed on each
 python trim.py /path/to/target/folder/ --verbose
 ```
 
-The `--make-copies` flag causes files to be copied into target folders preserving the  originals. 
-```
-python trim.py /path/to/target/folder/ --verbose --make-copies
-```
-
-It is also possible to use CLI arguments to the specify custom deployment sheet formats:
-```
-pythontrim.py /path/to/target/folder/ --rec-sheet my_deployment_sheet_name.csv  --pick-col my_pick_up_col_name --depl-col my_deployment_col_name --depl-col my_subirs_col_name --time-str '%m/%d/%y %H:%M' --verbose
-```
 
