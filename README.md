@@ -47,4 +47,22 @@ It is recommended to use the `--verbose` flag to print actions performed on each
 python trim.py /path/to/target/folder/ --verbose
 ```
 
+Additional command line arguments:
+
+`--rec-sheet`: Custom filename for recordings sheet in parent folder containing recordings metadata.
+
+`--pick-col`: Custom pick-up time column name in [`rec-sheet`]
+
+`--depl-col`: Custom deployment time column name in [`rec-sheet`]
+
+`--dirs-col`: Custom sub-directories name column name in [`rec-sheet`]
+
+`--time-str` Dates formatting string. Defaults to `'%m/%d/%y %H:%M'`
+
+`--make-copies`: Create trimmed copies of original files in the parent folder. The default behavior is to move files. This is useful for testing prior to moving the original files.
+
+`--verbose`: Print performed actions while running the script.
+
+`--delay`: Add a delay in hours to deployment time and subtract from pickup time.
+
 
