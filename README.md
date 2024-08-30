@@ -40,6 +40,8 @@ For `trim` to work please provide a CSV sheet containing the following columns:
 - `pickup_date`: Date and time for ARU recovery. The default format is `%m/%d/%y %H:%M.`
 - `card_code`: Subdirectories names, typically micro-SD card IDs.
 
+**WARNING: Current version only accepts dates in UTC time zone.**
+
 ## 3. Usage
 
 It is recommended to use the `--verbose` flag to print actions performed on each file:
