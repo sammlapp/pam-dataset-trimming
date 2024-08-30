@@ -83,6 +83,7 @@ def trim(directory,
          pickup_time_var = 'pickup_date',
          time_str_format = '%m/%d/%y %H:%M',
          audio_formats = ['mp3', 'wav','WAV'],
+         gps_formats = ['PPS', 'pps', 'CSV', 'csv'],
          copy_files = False, 
          verbose = True,
          delay_h = None,):
@@ -96,6 +97,7 @@ def trim(directory,
         pickup_time_var (str, optional): Column in [recordings_sheet] containing ARU pick-up datetime. Defaults to 'pickup_date'.
         time_str_format (str, optional): Column in [recordings_sheet] datetime format. Defaults to '%m/%d/%y %H:%M'.
         audio_formats (list, optional): Possible audio formats. Defaults to ['mp3', 'wav','WAV'].
+        gps_formats (list, optional): Possible GPS file formats for localization arrays. Defaults to ['PPS', 'pps', 'CSV', 'csv'].
         copy_files (bool, optional): If true creates copies of files in destination folder, if false move files. Defaults to False.
         verbose (bool, optional): Print actions for each file. Defaults to True.
     
@@ -143,7 +145,9 @@ def trim(directory,
             
             # List all files from that card/recorder
             audio_files_i = []
-            for audio_extension in audio_formats:
+            
+            formats = audio_formats + gps_formats
+            for audio_extension in formats:
                 if aru == 'audio-moth':
                     audio_files_i = audio_files_i + glob(os.path.join(dir_i, f'*.{audio_extension}')) 
                 elif aru == 'smm':
