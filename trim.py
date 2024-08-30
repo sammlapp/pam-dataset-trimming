@@ -6,6 +6,7 @@ from opensoundscape.spectrogram import Spectrogram
 import os
 import shutil
 import time
+import math
 
 import pandas as pd
 from glob import glob
@@ -17,6 +18,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("folder",  type=str, default='./', help = 'Path to audio files.')
     parser.add_argument("--rec-sheet", dest = "sheet", type=str, default='deployment-sheet.csv', help = 'Filename for recordings sheet in [folder] containing recordings metadata.')
+    parser.add_argument("--aru", type=str, default='audio-moth', help = 'Specify ARU type which determines folder structure and filenames. Current options are "audio-moth" and "smm".')
     
     parser.add_argument("--pick-col",  dest  = 'pick_col', type=str, default='pickup_date', help = 'Pick-up time column name in [rec-sheet]')
     parser.add_argument("--depl-col",  dest  = 'depl_col', type=str, default='dropoff_date', help = 'Deployment time column name in [rec-sheet]')
@@ -41,8 +43,12 @@ def get_metadata(audio, duration_s):
     except:
         return None, None
 
-def parse_filename(filename, file_name_separator = '_' ):
-    date_str, time_str = filename.split('.')[0].split(file_name_separator)
+def parse_filename(filename, file_name_separator = '_', aru = 'audio-moth'):
+    
+    if aru == 'audio-moth':
+        date_str, time_str = filename.split('.')[0].split(file_name_separator)
+    elif aru == 'smm':
+        date_str, time_str =  filename.split('.')[0].split(file_name_separator)[-2:]
     
     year = int(date_str[0:4])
     month = int(date_str[4:6])
@@ -51,30 +57,47 @@ def parse_filename(filename, file_name_separator = '_' ):
     minutes = int(time_str[2:4])
     seconds = int(time_str[4:6])
     
-    return datetime(year, month, day, hour, minutes, seconds)
+    return datetime(year, month, day, hour, minutes, seconds, tzinfo=timezone.utc)
 
-
+def format_date(date_str, format):
+    """_summary_
+    
+    Args:
+        date_str (_type_): _description_
+        format (_type_): _description_
+    
+    Returns:
+        _type_: _description_
+    """
+    if isinstance(date_str, str):
+        return datetime.strptime(date_str, format).replace(tzinfo=timezone.utc)
+    else:
+        return None
+    
 #---------------------------------------------------------------------------------
-def trim(directoty, 
+def trim(directory, 
          recordings_sheet,
+         aru,
          folder_var = 'card_code',
          deployment_time_var = 'dropoff_date',
          pickup_time_var = 'pickup_date',
          time_str_format = '%m/%d/%y %H:%M',
          audio_formats = ['mp3', 'wav','WAV'],
+         gps_formats = ['PPS', 'pps', 'CSV', 'csv'],
          copy_files = False, 
          verbose = True,
          delay_h = None,):
     """Loop through sub-directories (typically storing different cards/recorders) and files and remove files outside of desired range.
     
     Args:
-        directoty (str): Path to target directory containing subfolders with audio recordings.
+        directory (str): Path to target directory containing subfolders with audio recordings.
         recordings_sheet (str): Path to recordings sheet containing recordings metadata.
         folder_var (str, optional): Column in [recordings_sheet] containing sub-directories names. Defaults to 'card_code'.
         deployment_time_var (str, optional): Column in [recordings_sheet] containing ARU deployment datetime. Defaults to 'dropoff_date'.
         pickup_time_var (str, optional): Column in [recordings_sheet] containing ARU pick-up datetime. Defaults to 'pickup_date'.
         time_str_format (str, optional): Column in [recordings_sheet] datetime format. Defaults to '%m/%d/%y %H:%M'.
         audio_formats (list, optional): Possible audio formats. Defaults to ['mp3', 'wav','WAV'].
+        gps_formats (list, optional): Possible GPS file formats for localization arrays. Defaults to ['PPS', 'pps', 'CSV', 'csv'].
         copy_files (bool, optional): If true creates copies of files in destination folder, if false move files. Defaults to False.
         verbose (bool, optional): Print actions for each file. Defaults to True.
     
@@ -82,18 +105,24 @@ def trim(directoty,
             Saves trimmed versions of audio files in [destination_dir]
     """
     # Recordings sheet ---------------------------------------------------------
-    df = pd.read_csv(recordings_sheet)
+    recordings_sheet_path = os.path.join(directory, recordings_sheet)
+    df = pd.read_csv(recordings_sheet_path)
     
     # Folder structure  ---------------------------------------------------------
-    subdir_names = list(df[folder_var].unique())
-    subdirs = [os.path.join(directoty, dir) for dir in subdir_names]
+    assert (pickup_time_var in df.columns), f'{pickup_time_var} not present in {recordings_sheet}.'
+    assert (pickup_time_var in df.columns), f'{pickup_time_var} not present in {recordings_sheet}.'
+    assert (folder_var in df.columns), f'{folder_var} not present in {recordings_sheet}.'
+    
+    subdir_names = list(df[folder_var].dropna().unique())
+    subdirs = [os.path.join(directory, dir) for dir in subdir_names]
+    
     
     # Create directory if copying and not moving files
     if copy_files:
-        out_dir = os.path.join(directoty, '_trimmed/')
+        out_dir = os.path.join(directory, '_trimmed/')
         if not os.path.exists(out_dir): os.mkdir(out_dir)
     else:
-        out_dir = directoty
+        out_dir = directory
     
     # Create destination directories
     keep_folder_path = os.path.join(out_dir, 'in-period/')
@@ -116,18 +145,26 @@ def trim(directoty,
             
             # List all files from that card/recorder
             audio_files_i = []
-            for format in audio_formats:
-                audio_files_i = audio_files_i + glob(os.path.join(dir_i, f'*.{format}')) 
+            
+            formats = audio_formats + gps_formats
+            for audio_extension in formats:
+                if aru == 'audio-moth':
+                    audio_files_i = audio_files_i + glob(os.path.join(dir_i, f'*.{audio_extension}')) 
+                elif aru == 'smm':
+                    audio_files_i = audio_files_i + glob(os.path.join(dir_i, f'Data/*.{audio_extension}')) 
+                else:
+                    raise Exception("ARU not defined correctly")
             audio_files_i.sort()
             
             # Get deployment/swap/recovery information from sheet
             row_i = df[df[folder_var] == dir_i_name]
-            deployment_time = datetime.strptime(row_i[deployment_time_var].item(), time_str_format).replace(tzinfo=timezone.utc)
-            pickup_time = datetime.strptime(row_i[pickup_time_var].item(), time_str_format).replace(tzinfo=timezone.utc)
             
+            deployment_time = format_date(row_i[deployment_time_var].item(), time_str_format)
+            pickup_time = format_date(row_i[pickup_time_var].item(), time_str_format)
+
             if delay_h:
-                deployment_time = deployment_time + datetime.timedelta(hours = delay_h)
-                pickup_time = pickup_time - datetime.timedelta(hours = delay_h)
+                if deployment_time: deployment_time = deployment_time + timedelta(hours = delay_h)
+                if pickup_time: pickup_time = pickup_time - timedelta(hours = delay_h)
             
             # Loop through files individually to check if in period -------------------
             n_files_i = len(audio_files_i)
@@ -150,7 +187,7 @@ def trim(directoty,
                         audio_j_st, audio_j_end  = get_metadata(audio_j, duration_j)
                         if audio_j_st is None:
                             print(f'{filename_j} has no metadata. Extracting recording time from filename.')
-                            audio_j_st = parse_filename(filename_j)
+                            audio_j_st = parse_filename(filename_j, aru = aru)
                             audio_j_end = audio_j_st + timedelta(seconds = duration_j)
                         
                         drop_filepath_j = os.path.join(drop_folder_path_subir_j, filename_j)
@@ -224,7 +261,7 @@ def trim(directoty,
                 no_folder_dict ={'sub_dir' : [dir_i_name], 'action' : [action_j]}
                 action_list = action_list + [no_folder_dict]
         else: 
-            if verbose: print(f'{dir_i_name} not found in {directoty}! Skipping.')
+            if verbose: print(f'{dir_i_name} not found in {directory}! Skipping.')
             action_j = 'directory skipped'
             no_folder_dict ={'sub_dir' : [dir_i_name], 'action' : [action_j]}
             action_list = action_list + [no_folder_dict]
@@ -238,9 +275,12 @@ def trim(directoty,
 if __name__ == "__main__":
     args = parse_args()
     
+    assert args.aru in ['audio-moth', 'smm'], f'{args.aru} not defined correctly, please select "audio-moth" or "smm"'
+    
     df = trim(
-        directoty = args.folder, 
-        recordings_sheet = os.path.join(args.folder, args.sheet),
+        directory = args.folder, 
+        recordings_sheet = args.sheet,
+        aru = args.aru,
         folder_var = args.dirs_col,
         deployment_time_var = args.depl_col,
         pickup_time_var = args.pick_col,
