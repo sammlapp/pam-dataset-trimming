@@ -43,8 +43,12 @@ def get_metadata(audio, duration_s):
     except:
         return None, None
 
-def parse_filename(filename, file_name_separator = '_' ):
-    date_str, time_str = filename.split('.')[0].split(file_name_separator)
+def parse_filename(filename, file_name_separator = '_', aru = 'audio-moth'):
+    
+    if aru == 'audio-moth':
+        date_str, time_str = filename.split('.')[0].split(file_name_separator)
+    elif aru == 'smm':
+        date_str, time_str =  filename.split('.')[0].split(file_name_separator)[-2:]
     
     year = int(date_str[0:4])
     month = int(date_str[4:6])
@@ -53,7 +57,7 @@ def parse_filename(filename, file_name_separator = '_' ):
     minutes = int(time_str[2:4])
     seconds = int(time_str[4:6])
     
-    return datetime(year, month, day, hour, minutes, seconds)
+    return datetime(year, month, day, hour, minutes, seconds, tzinfo=timezone.utc)
 
 def format_date(date_str, format):
     """_summary_
@@ -179,7 +183,7 @@ def trim(directory,
                         audio_j_st, audio_j_end  = get_metadata(audio_j, duration_j)
                         if audio_j_st is None:
                             print(f'{filename_j} has no metadata. Extracting recording time from filename.')
-                            audio_j_st = parse_filename(filename_j)
+                            audio_j_st = parse_filename(filename_j, aru = aru)
                             audio_j_end = audio_j_st + timedelta(seconds = duration_j)
                         
                         drop_filepath_j = os.path.join(drop_folder_path_subir_j, filename_j)
