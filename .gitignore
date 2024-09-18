@@ -71,3 +71,6 @@ _config.yml
 # Keep dockerfiles
 !/**/Dockerfile
 !/**/*.yml
+
+# Config files
+!/**/*.yaml

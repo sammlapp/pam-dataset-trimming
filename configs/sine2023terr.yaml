@@ -1,0 +1,21 @@
+
+data_folder: "/Users/lviotti/Library/CloudStorage/Dropbox/Work/Kitzes/datasets/sine2023terr copy"
+
+# audio-moth or smm
+aru_type: smm 
+
+# filename for deployment sheet in data_folder
+deployment_sheet: sine2023_terrestrial.csv 
+
+# Sheet columns
+pickup_time_column: "pickup:EditDate"
+deployment_time_column: "dropoff:EditDate" 
+subdirectories_column: recorder_code
+
+# Sheet date format
+datetime_format_str : '%m/%d/%y %H:%M'
+audio_formats: ['mp3', 'wav','WAV']
+gps_formats: ['PPS', 'pps', 'CSV', 'csv']
+
+# Add a delay in hours to deployment time and subtract from pickup time.
+delay_hours: null
