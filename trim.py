@@ -74,32 +74,6 @@ def format_date(date_str, format):
     
 #---------------------------------------------------------------------------------
 
-# if __name__ == "__main__":
-#     args = parse_args()
-    
-    # with open(args.config, "r") as stream:
-    #     try:
-    #         cfg = yaml.safe_load(stream)
-    #     except yaml.YAMLError as exc:
-    #         print(exc)
-    
-    # assert args.aru in ['audio-moth', 'smm'], f'{args.aru} not defined correctly, please select "audio-moth" or "smm"'
-    
-
-    # directory = args.folder
-    # recordings_sheet = args.sheet
-    # aru = args.aru
-    # folder_var = args.dirs_col
-    # deployment_time_var = args.depl_col
-    # pickup_time_var = args.pick_col
-    # verbose = args.verbose
-    # time_str_format = args.time_str
-    # audio_formats = ['mp3', 'wav','WAV']
-    # gps_formats = ['PPS', 'pps', 'CSV', 'csv']
-    # delay_h = None
-    # dry_run= args.dry_run
-
-
 def trim(directory, 
          recordings_sheet,
          aru,
@@ -333,7 +307,9 @@ if __name__ == "__main__":
         pickup_time_var = cfg['pickup_time_column'],
         verbose = (not args.silent), 
         time_str_format = cfg['datetime_format_str'],
-        audio_formats = ['mp3', 'wav','WAV'],
+        audio_formats = cfg['audio_formats'],
+        gps_formats = cfg['gps_formats'],
+        delay_h = cfg['delay_hours'],
         dry_run= args.dry_run)
     
     today = time.strftime("%Y-%m-%d")
