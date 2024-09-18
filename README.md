@@ -44,27 +44,37 @@ For `trim` to work please provide a CSV sheet containing the following columns:
 
 ## 3. Usage
 
-It is recommended to use the `--verbose` flag to print actions performed on each file:
+
 ```
-python trim.py /path/to/target/folder/ --verbose
+python trim.py configs/your-config.yaml --dry-run
 ```
+
+Configuration file shouuld be a .yaml file and follow the format:
+```
+data_folder: "/path/to/your/data"
+
+aru_type: audio-moth # audio-moth or smm
+
+deployment_sheet: deployment-sheet.csv # filename for deployment sheet in [data_folder]
+
+# Sheet columns
+pickup_time_column: "pickup_date"
+deployment_time_column: "dropoff_date" 
+subdirectories_column: "card_code"
+
+# Sheet date format
+datetime_format_str : '%m/%d/%y %H:%M'
+
+# Add a delay in hours to deployment time and subtract from pickup time.
+delay: nan
+```
+
 
 Additional command line arguments:
 
-`--rec-sheet`: Custom filename for recordings sheet in parent folder containing recordings metadata.
+`--dry-run`: Do not move files, just create _trimming-actions.csv sheet.
 
-`--pick-col`: Custom pick-up time column name in [`rec-sheet`]
+`--verbose`: Do not print performed actions while running the script.
 
-`--depl-col`: Custom deployment time column name in [`rec-sheet`]
-
-`--dirs-col`: Custom sub-directories name column name in [`rec-sheet`]
-
-`--time-str` Dates formatting string. Defaults to `'%m/%d/%y %H:%M'`
-
-`--make-copies`: Create trimmed copies of original files in the parent folder. The default behavior is to move files. This is useful for testing prior to moving the original files.
-
-`--verbose`: Print performed actions while running the script.
-
-`--delay`: Add a delay in hours to deployment time and subtract from pickup time.
 
 
