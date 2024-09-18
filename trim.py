@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False, help = "Don't move files, just create sheet,.")
     
     # # parser.add_argument("--make-copies", dest = 'copy', action="store_true", default=False, help = "Create a trimmed copy of original files in [folder]. Default behavior is to move files.")
-    parser.add_argument("--verbose", action="store_true", default=False, help = "Print performed actions while running the script.")
+    parser.add_argument("--silent", action="store_true", default=False, help = "Do not print performed actions while running the script.")
     
     # parser.add_argument("--pick-col",  dest  = 'pick_col', type=str, default='pickup_date', help = 'Pick-up time column name in [rec-sheet]')
     # parser.add_argument("--depl-col",  dest  = 'depl_col', type=str, default='dropoff_date', help = 'Deployment time column name in [rec-sheet]')
@@ -109,7 +109,6 @@ def trim(directory,
          time_str_format = '%m/%d/%y %H:%M',
          audio_formats = ['mp3', 'wav','WAV'],
          gps_formats = ['PPS', 'pps', 'CSV', 'csv'],
-         copy_files = False, 
          verbose = True,
          delay_h = None,
          dry_run = False):
@@ -215,7 +214,7 @@ def trim(directory,
                         # If it does not have metadata get if from filename
                         audio_j_st, audio_j_end  = get_metadata(audio_j, duration_j)
                         if audio_j_st is None:
-                            print(f'{filename_j} has no metadata. Extracting recording time from filename.')
+                            if verbose: print(f'{filename_j} has no metadata. Extracting recording time from filename.')
                             audio_j_st = parse_filename(filename_j, aru = aru)
                             audio_j_end = audio_j_st + timedelta(seconds = duration_j)
                         
@@ -323,9 +322,6 @@ if __name__ == "__main__":
         except yaml.YAMLError as exc:
             print(exc)
     
-    
-    
-    
     assert cfg['aru_type'] in ['audio-moth', 'smm'], f'{args.aru} not defined correctly, please select "audio-moth" or "smm"'
     
     df = trim(
@@ -335,12 +331,11 @@ if __name__ == "__main__":
         folder_var = cfg['subdirectories_column'],
         deployment_time_var = cfg['deployment_time_column'],
         pickup_time_var = cfg['pickup_time_column'],
-        verbose = args.verbose, 
+        verbose = (not args.silent), 
         time_str_format = cfg['datetime_format_str'],
         audio_formats = ['mp3', 'wav','WAV'],
         dry_run= args.dry_run)
     
-    
     today = time.strftime("%Y-%m-%d")
-    df.to_csv(os.path.join(args.folder, f'_trimming-actions-{today}.csv'), index = False    )
+    df.to_csv(os.path.join(cfg['data_folder'], f'_trimming-actions-{today}.csv'), index = False    )
 
