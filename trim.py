@@ -11,22 +11,8 @@ from datetime import datetime, timezone, timedelta
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("config", type=str, help = 'Path to .yaml config file')
-    # parser.add_argument("folder",  type=str, default='./', help = 'Path to audio files.')
-    # parser.add_argument("--rec-sheet", dest = "sheet", type=str, default='deployment-sheet.csv', help = 'Filename for recordings sheet in [folder] containing recordings metadata.')
-    # parser.add_argument("--aru", type=str, default='audio-moth', help = 'Specify ARU type which determines folder structure and filenames. Current options are "audio-moth" and "smm".')
-    
     parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False, help = "Don't move files, just create sheet,.")
-    
-    # # parser.add_argument("--make-copies", dest = 'copy', action="store_true", default=False, help = "Create a trimmed copy of original files in [folder]. Default behavior is to move files.")
     parser.add_argument("--silent", action="store_true", default=False, help = "Do not print performed actions while running the script.")
-    
-    # parser.add_argument("--pick-col",  dest  = 'pick_col', type=str, default='pickup_date', help = 'Pick-up time column name in [rec-sheet]')
-    # parser.add_argument("--depl-col",  dest  = 'depl_col', type=str, default='dropoff_date', help = 'Deployment time column name in [rec-sheet]')
-    # parser.add_argument("--dirs-col",  dest  = 'dirs_col', type=str, default='card_code', help = 'Sub-directories name column name in [rec-sheet]')
-    # parser.add_argument("--time-str",  dest  = 'time_str', type=str, default='%m/%d/%y %H:%M', help = 'Dates formatting string.')
-
-
-    # parser.add_argument("--delay",  type=int, default=None, help = 'Add a delay in hours to deployment time and subtract from pickup time.')
 
     return parser.parse_args()
 
