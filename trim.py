@@ -1,37 +1,32 @@
-import argparse
-
 from opensoundscape.audio import Audio
 from opensoundscape.spectrogram import Spectrogram
 
-import os
-import shutil
-import time
-import math
+import os, yaml, shutil, time, json, argparse
 
 import pandas as pd
 from glob import glob
-import json
 from datetime import datetime, timezone, timedelta
 
 #---------------------------------------------------------------------------------
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("folder",  type=str, default='./', help = 'Path to audio files.')
-    # parser.add_argument("--config", type=str, required= True, help = 'Path to .yaml config file')
-    parser.add_argument("--rec-sheet", dest = "sheet", type=str, default='deployment-sheet.csv', help = 'Filename for recordings sheet in [folder] containing recordings metadata.')
-    parser.add_argument("--aru", type=str, default='audio-moth', help = 'Specify ARU type which determines folder structure and filenames. Current options are "audio-moth" and "smm".')
+    parser.add_argument("config", type=str, help = 'Path to .yaml config file')
+    # parser.add_argument("folder",  type=str, default='./', help = 'Path to audio files.')
+    # parser.add_argument("--rec-sheet", dest = "sheet", type=str, default='deployment-sheet.csv', help = 'Filename for recordings sheet in [folder] containing recordings metadata.')
+    # parser.add_argument("--aru", type=str, default='audio-moth', help = 'Specify ARU type which determines folder structure and filenames. Current options are "audio-moth" and "smm".')
     
     parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False, help = "Don't move files, just create sheet,.")
-    # parser.add_argument("--make-copies", dest = 'copy', action="store_true", default=False, help = "Create a trimmed copy of original files in [folder]. Default behavior is to move files.")
+    
+    # # parser.add_argument("--make-copies", dest = 'copy', action="store_true", default=False, help = "Create a trimmed copy of original files in [folder]. Default behavior is to move files.")
     parser.add_argument("--verbose", action="store_true", default=False, help = "Print performed actions while running the script.")
     
-    parser.add_argument("--pick-col",  dest  = 'pick_col', type=str, default='pickup_date', help = 'Pick-up time column name in [rec-sheet]')
-    parser.add_argument("--depl-col",  dest  = 'depl_col', type=str, default='dropoff_date', help = 'Deployment time column name in [rec-sheet]')
-    parser.add_argument("--dirs-col",  dest  = 'dirs_col', type=str, default='card_code', help = 'Sub-directories name column name in [rec-sheet]')
-    parser.add_argument("--time-str",  dest  = 'time_str', type=str, default='%m/%d/%y %H:%M', help = 'Dates formatting string.')
+    # parser.add_argument("--pick-col",  dest  = 'pick_col', type=str, default='pickup_date', help = 'Pick-up time column name in [rec-sheet]')
+    # parser.add_argument("--depl-col",  dest  = 'depl_col', type=str, default='dropoff_date', help = 'Deployment time column name in [rec-sheet]')
+    # parser.add_argument("--dirs-col",  dest  = 'dirs_col', type=str, default='card_code', help = 'Sub-directories name column name in [rec-sheet]')
+    # parser.add_argument("--time-str",  dest  = 'time_str', type=str, default='%m/%d/%y %H:%M', help = 'Dates formatting string.')
 
 
-    parser.add_argument("--delay",  type=int, default=None, help = 'Add a delay in hours to deployment time and subtract from pickup time.')
+    # parser.add_argument("--delay",  type=int, default=None, help = 'Add a delay in hours to deployment time and subtract from pickup time.')
 
     return parser.parse_args()
 
@@ -79,8 +74,8 @@ def format_date(date_str, format):
     
 #---------------------------------------------------------------------------------
 
-if __name__ == "__main__":
-    args = parse_args()
+# if __name__ == "__main__":
+#     args = parse_args()
     
     # with open(args.config, "r") as stream:
     #     try:
@@ -88,53 +83,53 @@ if __name__ == "__main__":
     #     except yaml.YAMLError as exc:
     #         print(exc)
     
-    assert args.aru in ['audio-moth', 'smm'], f'{args.aru} not defined correctly, please select "audio-moth" or "smm"'
+    # assert args.aru in ['audio-moth', 'smm'], f'{args.aru} not defined correctly, please select "audio-moth" or "smm"'
     
 
-    directory = args.folder
-    recordings_sheet = args.sheet
-    aru = args.aru
-    folder_var = args.dirs_col
-    deployment_time_var = args.depl_col
-    pickup_time_var = args.pick_col
-    verbose = args.verbose
-    time_str_format = args.time_str
-    audio_formats = ['mp3', 'wav','WAV']
-    gps_formats = ['PPS', 'pps', 'CSV', 'csv']
-    delay_h = None
-    dry_run= args.dry_run
+    # directory = args.folder
+    # recordings_sheet = args.sheet
+    # aru = args.aru
+    # folder_var = args.dirs_col
+    # deployment_time_var = args.depl_col
+    # pickup_time_var = args.pick_col
+    # verbose = args.verbose
+    # time_str_format = args.time_str
+    # audio_formats = ['mp3', 'wav','WAV']
+    # gps_formats = ['PPS', 'pps', 'CSV', 'csv']
+    # delay_h = None
+    # dry_run= args.dry_run
 
 
-# def trim(directory, 
-#          recordings_sheet,
-#          aru,
-#          folder_var = 'card_code',
-#          deployment_time_var = 'dropoff_date',
-#          pickup_time_var = 'pickup_date',
-#          time_str_format = '%m/%d/%y %H:%M',
-#          audio_formats = ['mp3', 'wav','WAV'],
-#          gps_formats = ['PPS', 'pps', 'CSV', 'csv'],
-#          copy_files = False, 
-#          verbose = True,
-#          delay_h = None,
-#          dry_run = False):
-#     """Loop through sub-directories (typically storing different cards/recorders) and files and remove files outside of desired range.
+def trim(directory, 
+         recordings_sheet,
+         aru,
+         folder_var = 'card_code',
+         deployment_time_var = 'dropoff_date',
+         pickup_time_var = 'pickup_date',
+         time_str_format = '%m/%d/%y %H:%M',
+         audio_formats = ['mp3', 'wav','WAV'],
+         gps_formats = ['PPS', 'pps', 'CSV', 'csv'],
+         copy_files = False, 
+         verbose = True,
+         delay_h = None,
+         dry_run = False):
+    """Loop through sub-directories (typically storing different cards/recorders) and files and remove files outside of desired range.
     
-#     Args:
-#         directory (str): Path to target directory containing subfolders with audio recordings.
-#         recordings_sheet (str): Path to recordings sheet containing recordings metadata.
-#         folder_var (str, optional): Column in [recordings_sheet] containing sub-directories names. Defaults to 'card_code'.
-#         deployment_time_var (str, optional): Column in [recordings_sheet] containing ARU deployment datetime. Defaults to 'dropoff_date'.
-#         pickup_time_var (str, optional): Column in [recordings_sheet] containing ARU pick-up datetime. Defaults to 'pickup_date'.
-#         time_str_format (str, optional): Column in [recordings_sheet] datetime format. Defaults to '%m/%d/%y %H:%M'.
-#         audio_formats (list, optional): Possible audio formats. Defaults to ['mp3', 'wav','WAV'].
-#         gps_formats (list, optional): Possible GPS file formats for localization arrays. Defaults to ['PPS', 'pps', 'CSV', 'csv'].
-#         copy_files (bool, optional): If true creates copies of files in destination folder, if false move files. Defaults to False.
-#         verbose (bool, optional): Print actions for each file. Defaults to True.
+    Args:
+        directory (str): Path to target directory containing subfolders with audio recordings.
+        recordings_sheet (str): Path to recordings sheet containing recordings metadata.
+        folder_var (str, optional): Column in [recordings_sheet] containing sub-directories names. Defaults to 'card_code'.
+        deployment_time_var (str, optional): Column in [recordings_sheet] containing ARU deployment datetime. Defaults to 'dropoff_date'.
+        pickup_time_var (str, optional): Column in [recordings_sheet] containing ARU pick-up datetime. Defaults to 'pickup_date'.
+        time_str_format (str, optional): Column in [recordings_sheet] datetime format. Defaults to '%m/%d/%y %H:%M'.
+        audio_formats (list, optional): Possible audio formats. Defaults to ['mp3', 'wav','WAV'].
+        gps_formats (list, optional): Possible GPS file formats for localization arrays. Defaults to ['PPS', 'pps', 'CSV', 'csv'].
+        copy_files (bool, optional): If true creates copies of files in destination folder, if false move files. Defaults to False.
+        verbose (bool, optional): Print actions for each file. Defaults to True.
     
-#     Returns:
-#             Saves trimmed versions of audio files in [destination_dir]
-#     """
+    Returns:
+            Saves trimmed versions of audio files in [destination_dir]
+    """
     # Recordings sheet ---------------------------------------------------------
     recordings_sheet_path = os.path.join(directory, recordings_sheet)
     df = pd.read_csv(recordings_sheet_path)
@@ -316,32 +311,35 @@ if __name__ == "__main__":
     df = pd.concat([pd.DataFrame.from_dict(r) for r in action_list])
     print('Done!')
     
-    # return df
+    return df
 
-# #---------------------------------------------------------------------------------
-# if __name__ == "__main__":
-#     args = parse_args()
+#---------------------------------------------------------------------------------
+if __name__ == "__main__":
+    args = parse_args()
     
-#     # with open(args.config, "r") as stream:
-#     #     try:
-#     #         cfg = yaml.safe_load(stream)
-#     #     except yaml.YAMLError as exc:
-#     #         print(exc)
+    with open(args.config, "r") as stream:
+        try:
+            cfg = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
     
-#     assert args.aru in ['audio-moth', 'smm'], f'{args.aru} not defined correctly, please select "audio-moth" or "smm"'
     
-#     df = trim(
-#         directory = args.folder, 
-#         recordings_sheet = args.sheet,
-#         aru = args.aru,
-#         folder_var = args.dirs_col,
-#         deployment_time_var = args.depl_col,
-#         pickup_time_var = args.pick_col,
-#         verbose = args.verbose, 
-#         copy_files = args.copy,
-#         time_str_format = args.time_str,
-#         audio_formats = ['mp3', 'wav','WAV'],
-#         dry_run= args.dry_run)
+    
+    
+    assert cfg['aru_type'] in ['audio-moth', 'smm'], f'{args.aru} not defined correctly, please select "audio-moth" or "smm"'
+    
+    df = trim(
+        directory = cfg['data_folder'], 
+        recordings_sheet = cfg['deployment_sheet'],
+        aru = cfg['aru_type'],
+        folder_var = cfg['subdirectories_column'],
+        deployment_time_var = cfg['deployment_time_column'],
+        pickup_time_var = cfg['pickup_time_column'],
+        verbose = args.verbose, 
+        time_str_format = cfg['datetime_format_str'],
+        audio_formats = ['mp3', 'wav','WAV'],
+        dry_run= args.dry_run)
+    
     
     today = time.strftime("%Y-%m-%d")
     df.to_csv(os.path.join(args.folder, f'_trimming-actions-{today}.csv'), index = False    )
