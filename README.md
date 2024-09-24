@@ -51,22 +51,26 @@ python trim.py configs/your-config.yaml --dry-run
 
 Configuration file shouuld be a .yaml file and follow the format:
 ```
-data_folder: "/path/to/your/data"
+data_folder: "/path/to/your/data/folder/"
 
-aru_type: audio-moth # audio-moth or smm
+# audio-moth or smm
+aru_type: smm 
 
-deployment_sheet: deployment-sheet.csv # filename for deployment sheet in [data_folder]
+# filename for deployment sheet in data_folder
+deployment_sheet: my_deployment_sheet.csv
 
 # Sheet columns
-pickup_time_column: "pickup_date"
-deployment_time_column: "dropoff_date" 
-subdirectories_column: "card_code"
+pickup_time_column: pickup_date
+deployment_time_column: dropoff_date
+subdirectories_column: recorder_code
 
 # Sheet date format
 datetime_format_str : '%m/%d/%y %H:%M'
+audio_formats: ['mp3', 'wav','WAV']
+gps_formats: ['PPS', 'pps', 'CSV', 'csv']
 
 # Add a delay in hours to deployment time and subtract from pickup time.
-delay: nan
+delay_hours: null
 ```
 
 
