@@ -133,12 +133,19 @@ def trim(directory,
             # List all files from that card/recorder
             audio_files_i = []
             
+            
+            # Force formats to be lists
+            if type(audio_formats) is not list:
+                audio_formats = [audio_formats]
+            if type(gps_formats) is not list:
+                gps_formats = [gps_formats]
+            
             formats = audio_formats + gps_formats
-            for audio_extension in formats:
+            for file_extension in formats:
                 if aru == 'audio-moth':
-                    audio_files_i = audio_files_i + glob(os.path.join(dir_i, f'*.{audio_extension}')) 
+                    audio_files_i = audio_files_i + glob(os.path.join(dir_i, f'*.{file_extension}')) 
                 elif aru == 'smm':
-                    audio_files_i = audio_files_i + glob(os.path.join(dir_i, f'Data/*.{audio_extension}')) 
+                    audio_files_i = audio_files_i + glob(os.path.join(dir_i, f'Data/*.{file_extension}')) 
                 else:
                     raise Exception("ARU not defined correctly")
             audio_files_i.sort()
