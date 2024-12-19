@@ -1,0 +1,24 @@
+
+data_folder: "/media/kiwi/datasets/unfinalized/sine2024aqua"
+
+# audio-moth or smm
+aru_type: audio-moth 
+
+# filename for deployment sheet in data_folder
+deployment_sheet: sine2024aqua_deployment_sheet_without_missing_recorders.csv
+
+# Sheet columns
+pickup_time_column: pickup_date
+deployment_time_column: dropoff_date
+subdirectories_column: card_code
+
+# Sheet date format
+datetime_format_str : '%m/%d/%y %H:%M'
+audio_formats: ['mp3', 'wav','WAV']
+gps_formats: ['PPS', 'pps', 'CSV', 'csv']
+
+# Add a delay in hours to deployment time and subtract from pickup time.
+delay_hours: null
+
+# Parallelize with Joblib.Parallel and delayed
+parallel_jobs: 8
