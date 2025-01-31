@@ -49,7 +49,7 @@ For `trim` to work please provide a CSV sheet containing the following columns:
 python trim.py configs/your-config.yaml --dry-run
 ```
 
-Configuration file shouuld be a .yaml file and follow the format:
+Configuration file should be a .yaml file and follow the format:
 ```
 data_folder: "/path/to/your/data/folder/"
 
@@ -78,7 +78,7 @@ Additional command line arguments:
 
 `--dry-run`: Do not move files, just create _trimming-actions.csv sheet.
 
-`--verbose`: Do not print performed actions while running the script.
+`--silent`: Do not print performed actions while running the script.
 
 
 

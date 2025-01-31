@@ -178,6 +178,7 @@ def trim(
     folder_var="card_code",
     deployment_time_var="dropoff_date",
     pickup_time_var="pickup_date",
+    subdirectories_column="card_code",
     time_str_format="%m/%d/%y %H:%M",
     audio_formats=["mp3", "wav", "WAV"],
     gps_formats=["PPS", "pps", "CSV", "csv"],
@@ -275,12 +276,24 @@ def trim(
 
             # Get deployment/swap/recovery information from sheet
             row_i = df[df[folder_var] == dir_i_name]
+            assert len(row_i)==1, f"found {len(row_i)} entries for {dir_i_name}! Must be 1 entry"
+            row_i = row_i.iloc[0]
 
-            # Will crate None if missing
-            deployment_time = format_date(
-                row_i[deployment_time_var].item(), time_str_format
-            )
-            pickup_time = format_date(row_i[pickup_time_var].item(), time_str_format)
+            # Will create None if missing for deployment_time and pickup_time
+
+            try:
+                deployment_time = format_date(
+                    row_i[deployment_time_var], time_str_format
+                )
+            except Exception as e:
+                raise ValueError(f"Failed to parse deployment_time value: {row_i[deployment_time_var]} \n\tfor file in folder: {row_i[subdirectories_column]}. \n\tExpected format based on config `datetime_format_str`: {time_str_format}") from e
+            try:
+                pickup_time = format_date(row_i[pickup_time_var], time_str_format)
+
+            except Exception as e:
+                raise ValueError(f"Failed to parse pickup_time value: {row_i[pickup_time_var]} \n\tfor file in folder: {row_i[subdirectories_column]}. \n\tExpected format based on config `datetime_format_str`: {time_str_format}") from e
+    
+            
 
             if delay_h:
                 if deployment_time:
@@ -380,6 +393,7 @@ if __name__ == "__main__":
         folder_var=cfg["subdirectories_column"],
         deployment_time_var=cfg["deployment_time_column"],
         pickup_time_var=cfg["pickup_time_column"],
+        subdirectories_column=cfg["subdirectories_column"],
         verbose=(not args.silent),
         time_str_format=cfg["datetime_format_str"],
         audio_formats=cfg["audio_formats"],
