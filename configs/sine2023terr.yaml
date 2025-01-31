@@ -19,3 +19,6 @@ gps_formats: ['PPS', 'pps', 'CSV', 'csv']
 
 # Add a delay in hours to deployment time and subtract from pickup time.
 delay_hours: null
+
+# Parallelize with Joblib.Parallel and delayed
+parallel_jobs: 8

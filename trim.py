@@ -341,7 +341,7 @@ def trim(
 
             else:
                 if verbose:
-                    print(f"Found zero audio files in {dir_i_name}! Skiping.")
+                    print(f"Found zero audio files in {dir_i_name}! Skipping.")
                 action_j = "directory with zero files"
                 no_folder_dict = {"sub_dir": [dir_i_name], "action": [action_j]}
                 action_list = action_list + [no_folder_dict]
