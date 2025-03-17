@@ -235,10 +235,10 @@ def trim(
         out_dir, "not-processed/"
     )  # only created if it happens
 
-    if (not os.path.exists(keep_folder_path)) & (not dry_run):
-        os.mkdir(keep_folder_path)
-    if (not os.path.exists(drop_folder_path)) & (not dry_run):
-        os.mkdir(drop_folder_path)
+    if not dry_run:
+        Path(keep_folder_path).mkdir(exist_ok=True)
+    if not dry_run:
+        Path(keep_folder_path).mkdir(exist_ok=True)
 
     # Loop through sub-directories ----------------------------------------------
 
@@ -248,6 +248,7 @@ def trim(
         dir_i_name = dir_i.stem
 
         if dir_i.exists():
+            print(dir_i)
             if verbose:
                 print(f"Processing audio files in {dir_i_name}.")
 
@@ -263,20 +264,18 @@ def trim(
             formats = audio_formats + gps_formats
             for file_extension in formats:
                 if aru == "audio-moth":
-                    audio_files_i = audio_files_i + list(
-                        dir_i.glob(f"*.{file_extension}")
-                    )
+                    audio_files_i.extend(list(dir_i.glob(f"*.{file_extension}")))
                 elif aru == "smm":
-                    audio_files_i = audio_files_i + list(
-                        dir_i.glob(f"Data/*.{file_extension}")
-                    )
+                    audio_files_i.extend(list(dir_i.glob(f"Data/*.{file_extension}")))
                 else:
                     raise Exception(f"aru arg should be audio-moth or smm, got {aru}")
             audio_files_i.sort()
 
             # Get deployment/swap/recovery information from sheet
             row_i = df[df[folder_var] == dir_i_name]
-            assert len(row_i)==1, f"found {len(row_i)} entries for {dir_i_name}! Must be 1 entry"
+            assert (
+                len(row_i) == 1
+            ), f"found {len(row_i)} entries for {dir_i_name}! Must be 1 entry"
             row_i = row_i.iloc[0]
 
             # Will create None if missing for deployment_time and pickup_time
@@ -286,14 +285,16 @@ def trim(
                     row_i[deployment_time_var], time_str_format
                 )
             except Exception as e:
-                raise ValueError(f"Failed to parse deployment_time value: {row_i[deployment_time_var]} \n\tfor file in folder: {row_i[subdirectories_column]}. \n\tExpected format based on config `datetime_format_str`: {time_str_format}") from e
+                raise ValueError(
+                    f"Failed to parse deployment_time value: {row_i[deployment_time_var]} \n\tfor file in folder: {row_i[subdirectories_column]}. \n\tExpected format based on config `datetime_format_str`: {time_str_format}"
+                ) from e
             try:
                 pickup_time = format_date(row_i[pickup_time_var], time_str_format)
 
             except Exception as e:
-                raise ValueError(f"Failed to parse pickup_time value: {row_i[pickup_time_var]} \n\tfor file in folder: {row_i[subdirectories_column]}. \n\tExpected format based on config `datetime_format_str`: {time_str_format}") from e
-    
-            
+                raise ValueError(
+                    f"Failed to parse pickup_time value: {row_i[pickup_time_var]} \n\tfor file in folder: {row_i[subdirectories_column]}. \n\tExpected format based on config `datetime_format_str`: {time_str_format}"
+                ) from e
 
             if delay_h:
                 if deployment_time:
@@ -332,17 +333,18 @@ def trim(
                 if (not os.listdir(dir_i)) & (not dry_run):
                     os.rmdir(dir_i)
 
+
                 # If it is not empty, we could not process all files for some reason
                 else:
                     if verbose:
                         print(f'{"":<4} Could not process all files in {dir_i_name}.')
-                    if (not os.path.exists(not_processed_folder_path)) & (not dry_run):
-                        os.mkdir(not_processed_folder_path)
+                    if not dry_run:
+                        Path(not_processed_folder_path).mkdir(exist_ok=True)
 
                     # Create card specific subdirs
                     np_dir_i = os.path.join(not_processed_folder_path, dir_i_name)
                     if not dry_run:
-                        os.mkdir(np_dir_i)
+                        Path(np_dir_i).mkdir(exist_ok=True)
 
                     # Move not processed filese
                     for file_j in os.listdir(dir_i):

@@ -1,11 +1,11 @@
 
-data_folder: "/Users/lviotti/Library/CloudStorage/Dropbox/Work/Kitzes/datasets/sine2023matlock copy"
+data_folder: "/media/kiwi/datasets/unfinalized/pana2023dry"
 
 # audio-moth or smm
-aru_type: smm 
+aru_type: smm
 
 # filename for deployment sheet in data_folder
-deployment_sheet: sine2023matlock_deployment_sheet_without_missing_recorders.csv
+deployment_sheet: pana2023dry_deployment_sheet.csv
 
 # Sheet columns
 pickup_time_column: pickup_date
