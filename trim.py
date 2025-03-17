@@ -75,6 +75,19 @@ def format_date(date_str, format):
     else:
         return None
 
+import filecmp
+def move_file(src,dst):
+    if Path(dst).exists():
+        # check if they are the same
+        if filecmp.cmp(src,dst)==True:
+            # delete the source file, as it already exists at dst and files are equivalent
+            Path(src).unlink()
+        else:
+            # the destination exists but is not the same as source file. We need to investigate what happened. 
+            raise FileExistsError(f"Attempted to move {src} to {dst}, but destination file exists and is not equivalent to source file.")
+    else:
+        shutil.move(src, dst)
+
 
 # ---------------------------------------------------------------------------------
 def process_file(
@@ -120,7 +133,8 @@ def process_file(
                 )
             if not dry_run:
                 Path(drop_folder).mkdir(exist_ok=True)
-                shutil.move(path, drop_filepath_j)
+                move_file(path,drop_filepath_j)
+                
             action_i = "out of period start"
 
         # Check if pick-up happened before recording ended
@@ -131,14 +145,14 @@ def process_file(
                 )
             if not dry_run:
                 Path(drop_folder).mkdir(exist_ok=True)
-                shutil.move(path, drop_filepath_j)
+                move_file(path, drop_filepath_j)
                 action_i = "out of period end"
         else:
             if verbose:
                 print(f'{"":<4}{filename_j} is within the correct period.')
             if not dry_run:
                 Path(keep_folder).mkdir(exist_ok=True)
-                shutil.move(path, keep_filepath_j)
+                move_file(path, keep_filepath_j)
             action_i = "within period"
     except:
         print(f"{filename_j} Could not be loaded")
@@ -346,10 +360,10 @@ def trim(
                     if not dry_run:
                         Path(np_dir_i).mkdir(exist_ok=True)
 
-                    # Move not processed filese
+                    # Move not processed files
                     for file_j in os.listdir(dir_i):
                         if not dry_run:
-                            shutil.move(os.path.join(dir_i, file_j), np_dir_i)
+                            move_file(os.path.join(dir_i, file_j), np_dir_i)
 
                     if not dry_run:
                         os.rmdir(dir_i)
