@@ -76,17 +76,25 @@ def format_date(date_str, format):
         return None
 
 import filecmp
-def move_file(src,dst):
-    if Path(dst).exists():
-        # check if they are the same
-        if filecmp.cmp(src,dst)==True:
+def move_file(src, dst):
+    src = Path(src)
+    dst = Path(dst)
+
+    if dst.is_dir():
+        # If dst is a directory, append the filename from src
+        dst = dst / src.name
+
+    if dst.exists():
+        if filecmp.cmp(src, dst, shallow=True):  # Compare file size & edit time
             # delete the source file, as it already exists at dst and files are equivalent
-            Path(src).unlink()
+            src.unlink()  # Delete the source file if identical
         else:
             # the destination exists but is not the same as source file. We need to investigate what happened. 
-            raise FileExistsError(f"Attempted to move {src} to {dst}, but destination file exists and is not equivalent to source file.")
+            raise FileExistsError(
+                f"Attempted to move {src} to {dst}, but destination file exists and is not equivalent to source file."
+            )
     else:
-        shutil.move(src, dst)
+        shutil.move(str(src), str(dst))  # Move the file
 
 
 # ---------------------------------------------------------------------------------
