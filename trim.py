@@ -40,7 +40,11 @@ def parse_args():
 
 def get_start_end_timestamps(file, duration_s):
     try:
-        metadata = opensoundscape.audio._metadata_from_file_handler(file)
+        # function name depends on the version of opensoundscape
+        if hasattr(opensoundscape.audio, "parse_metadata"):
+            metadata = opensoundscape.audio.parse_metadata(file)
+        else:
+            metadata = opensoundscape.audio._metadata_from_file_handler(file)
         audio_start = metadata["recording_start_time"]
         audio_end = audio_start + timedelta(seconds=duration_s)
         return audio_start, audio_end
@@ -75,7 +79,10 @@ def format_date(date_str, format):
     else:
         return None
 
+
 import filecmp
+
+
 def move_file(src, dst):
     src = Path(src)
     dst = Path(dst)
@@ -89,7 +96,7 @@ def move_file(src, dst):
             # delete the source file, as it already exists at dst and files are equivalent
             src.unlink()  # Delete the source file if identical
         else:
-            # the destination exists but is not the same as source file. We need to investigate what happened. 
+            # the destination exists but is not the same as source file. We need to investigate what happened.
             raise FileExistsError(
                 f"Attempted to move {src} to {dst}, but destination file exists and is not equivalent to source file."
             )
@@ -102,7 +109,6 @@ def process_file(
     path,
     dir_name,
     drop_folder,
-    keep_folder,
     deployment_time,
     pickup_time,
     aru,
@@ -130,23 +136,24 @@ def process_file(
             audio_j_end = audio_j_st + timedelta(seconds=duration_j)
 
         drop_filepath_j = os.path.join(drop_folder, filename_j)
-        keep_filepath_j = os.path.join(keep_folder, filename_j)
 
         # Trim actions ------------------------------------------------
         # Check if deployment happened after recording stated
         if deployment_time is not None and audio_j_st < deployment_time:
+            # audio starts before deployment, so move it to out-of-period
             if verbose:
                 print(
                     f'{"":<4}{dir_name} was deployed at {deployment_time.strftime("%Y-%m-%d %H:%M")}, but {filename_j} srtarts recording at {audio_j_st.strftime("%Y-%m-%d %H:%M")}'
                 )
             if not dry_run:
                 Path(drop_folder).mkdir(exist_ok=True)
-                move_file(path,drop_filepath_j)
-                
+                move_file(path, drop_filepath_j)
+
             action_i = "out of period start"
 
         # Check if pick-up happened before recording ended
         elif pickup_time is not None and audio_j_end > pickup_time:
+            # audio ends after pick-up, so move it to out-of-period
             if verbose:
                 print(
                     f'{"":<4}{dir_name} was picked-up at {pickup_time.strftime("%Y-%m-%d %H:%M")}, but this file contains audio until {audio_j_end.strftime("%Y-%m-%d %H:%M")}.'
@@ -156,11 +163,10 @@ def process_file(
                 move_file(path, drop_filepath_j)
                 action_i = "out of period end"
         else:
+            # the file starts after deployment and ends before pick-up, so it is within the period
             if verbose:
                 print(f'{"":<4}{filename_j} is within the correct period.')
-            if not dry_run:
-                Path(keep_folder).mkdir(exist_ok=True)
-                move_file(path, keep_filepath_j)
+            # do not move the file
             action_i = "within period"
     except:
         print(f"{filename_j} Could not be loaded")
@@ -198,18 +204,22 @@ def trim(
     recordings_sheet,
     aru,
     folder_var="card_code",
-    deployment_time_var="dropoff_date",
-    pickup_time_var="pickup_date",
+    deployment_time_col="dropoff_date",
+    pickup_time_col="pickup_date",
     subdirectories_column="card_code",
     time_str_format="%m/%d/%y %H:%M",
-    audio_formats=["mp3", "wav", "WAV"],
-    gps_formats=["PPS", "pps", "CSV", "csv"],
+    glob_patterns=["*.mp3", "*.wav", "*.WAV"],
     verbose=True,
-    delay_h=None,
+    buffer_hours=None,
     dry_run=False,
     parallel_jobs=1,
 ):
-    """Loop through sub-directories (typically storing different cards/recorders) and files and remove files outside of desired range.
+    """Move files to out-of-period sub-folder if they are outside of deployment and pickup times specified in the recordings sheet.
+
+    Loop through sub-directories (typically storing different cards/recorders) and files and
+    move files outside of desired range to a separate location. The out-of-period folder can be deleted if desired.
+
+    Files that are not in the list of file types to consider, and files within the deployment period, are left un-touched.
 
     Args:
         directory (str): Path to target directory containing subfolders with audio recordings.
@@ -218,11 +228,16 @@ def trim(
         deployment_time_var (str, optional): Column in [recordings_sheet] containing ARU deployment datetime. Defaults to 'dropoff_date'.
         pickup_time_var (str, optional): Column in [recordings_sheet] containing ARU pick-up datetime. Defaults to 'pickup_date'.
         time_str_format (str, optional): Column in [recordings_sheet] datetime format. Defaults to '%m/%d/%y %H:%M'.
-        audio_formats (list, optional): Possible audio formats. Defaults to ['mp3', 'wav','WAV'].
-        gps_formats (list, optional): Possible GPS file formats for localization arrays. Defaults to ['PPS', 'pps', 'CSV', 'csv'].
-        copy_files (bool, optional): If true creates copies of files in destination folder, if false move files. Defaults to False.
-        verbose (bool, optional): Print actions for each file. Defaults to True.
-
+        glob_patterns (list, optional): Globbing patterns for files to consider for in/out of period.
+            Defaults to ['*.mp3', '*.wav', '*.WAV'].
+            - these files are expected to have either metadata or names that can be parsed into datetime objects.
+            You can include GPS Audiomoth gps-log files such as "2025*.TXT" or "2025*.PPS".
+        verbose (bool, optional): Whether to print performed actions while running the script. Defaults to True.
+        delay_h (int, optional): Buffer time in hours to add to deployment time and subtract from pickup time. Defaults to None.
+            - This can be used to account for potential delays in deployment and pick-up.
+            - Files within the buffer are considered out-of-period
+        dry_run (bool, optional): [default: False] If True, will not move any files, but will still create the trimming actions sheet.
+        parallel_jobs (int, optional): Number of parallel jobs to run. Defaults to 1 (ie. no parallelization).
     Returns:
             Saves trimmed versions of audio files in [destination_dir]
     """
@@ -232,35 +247,23 @@ def trim(
 
     # Folder structure  ---------------------------------------------------------
     assert (
-        pickup_time_var in df.columns
-    ), f"{pickup_time_var} not present in {recordings_sheet}."
+        pickup_time_col in df.columns
+    ), f"{pickup_time_col} not present in {recordings_sheet}."
     assert (
-        pickup_time_var in df.columns
-    ), f"{pickup_time_var} not present in {recordings_sheet}."
+        pickup_time_col in df.columns
+    ), f"{pickup_time_col} not present in {recordings_sheet}."
     assert folder_var in df.columns, f"{folder_var} not present in {recordings_sheet}."
 
     subdir_names = list(df[folder_var].dropna().unique())
     subdirs = [os.path.join(directory, dir) for dir in subdir_names]
 
-    # Create directory if copying and not moving files
-    # if copy_files:
-    #     out_dir = os.path.join(directory, '_trimmed/')
-    #     if (not os.path.exists(out_dir)) & (not dry_run):
-    #         os.mkdir(out_dir)
-    # else:
     out_dir = directory
 
     # Create destination directories
-    keep_folder_path = os.path.join(out_dir, "in-period/")
     drop_folder_path = os.path.join(out_dir, "out-of-period/")
-    not_processed_folder_path = os.path.join(
-        out_dir, "not-processed/"
-    )  # only created if it happens
 
     if not dry_run:
-        Path(keep_folder_path).mkdir(exist_ok=True)
-    if not dry_run:
-        Path(keep_folder_path).mkdir(exist_ok=True)
+        Path(drop_folder_path).mkdir(exist_ok=True)
 
     # Loop through sub-directories ----------------------------------------------
 
@@ -277,67 +280,60 @@ def trim(
             # List all files from that card/recorder
             audio_files_i = []
 
-            # Force formats to be lists
-            if type(audio_formats) is not list:
-                audio_formats = [audio_formats]
-            if type(gps_formats) is not list:
-                gps_formats = [gps_formats]
-
-            formats = audio_formats + gps_formats
-            for file_extension in formats:
+            for glob_pattern in glob_patterns:
                 if aru == "audio-moth":
-                    audio_files_i.extend(list(dir_i.glob(f"*.{file_extension}")))
+                    # we expect to find audio files in the root of each card/recorder folder
+                    audio_files_i.extend(list(dir_i.glob(glob_pattern)))
                 elif aru == "smm":
-                    audio_files_i.extend(list(dir_i.glob(f"Data/*.{file_extension}")))
+                    # we expect to find audio files in a subfolder called "Data" within each card/recorder folder
+                    audio_files_i.extend(list(dir_i.glob(f"Data/{glob_pattern}")))
                 else:
                     raise Exception(f"aru arg should be audio-moth or smm, got {aru}")
             audio_files_i.sort()
 
             # Get deployment/swap/recovery information from sheet
-            row_i = df[df[folder_var] == dir_i_name]
+            folder_dpl_info = df[df[folder_var] == dir_i_name]
             assert (
-                len(row_i) == 1
-            ), f"found {len(row_i)} entries for {dir_i_name}! Must be 1 entry"
-            row_i = row_i.iloc[0]
+                len(folder_dpl_info) == 1
+            ), f"found {len(folder_dpl_info)} entries for {dir_i_name}! Must be 1 entry"
+            folder_dpl_info = folder_dpl_info.iloc[0]
 
             # Will create None if missing for deployment_time and pickup_time
-
             try:
                 deployment_time = format_date(
-                    row_i[deployment_time_var], time_str_format
+                    folder_dpl_info[deployment_time_col], time_str_format
                 )
             except Exception as e:
                 raise ValueError(
-                    f"Failed to parse deployment_time value: {row_i[deployment_time_var]} \n\tfor file in folder: {row_i[subdirectories_column]}. \n\tExpected format based on config `datetime_format_str`: {time_str_format}"
+                    f"Failed to parse deployment_time value: {folder_dpl_info[deployment_time_col]} \n\tfor file in folder: {folder_dpl_info[subdirectories_column]}. \n\tExpected format based on config `datetime_format_str`: {time_str_format}"
                 ) from e
             try:
-                pickup_time = format_date(row_i[pickup_time_var], time_str_format)
+                pickup_time = format_date(
+                    folder_dpl_info[pickup_time_col], time_str_format
+                )
 
             except Exception as e:
                 raise ValueError(
-                    f"Failed to parse pickup_time value: {row_i[pickup_time_var]} \n\tfor file in folder: {row_i[subdirectories_column]}. \n\tExpected format based on config `datetime_format_str`: {time_str_format}"
+                    f"Failed to parse pickup_time value: {folder_dpl_info[pickup_time_col]} \n\tfor file in folder: {folder_dpl_info[subdirectories_column]}. \n\tExpected format based on config `datetime_format_str`: {time_str_format}"
                 ) from e
 
-            if delay_h:
+            if buffer_hours:
                 if deployment_time:
-                    deployment_time = deployment_time + timedelta(hours=delay_h)
+                    deployment_time = deployment_time + timedelta(hours=buffer_hours)
                 if pickup_time:
-                    pickup_time = pickup_time - timedelta(hours=delay_h)
+                    pickup_time = pickup_time - timedelta(hours=buffer_hours)
 
             # Loop through files individually to check if in period -------------------
             n_files_i = len(audio_files_i)
             if n_files_i > 0:
 
                 # Create subfoldes in destination
-                keep_folder_path_subir_j = os.path.join(keep_folder_path, dir_i_name)
                 drop_folder_path_subir_j = os.path.join(drop_folder_path, dir_i_name)
-
                 results = joblib.Parallel(n_jobs=parallel_jobs)(
                     joblib.delayed(process_file)(
                         f,
                         dir_i_name,
                         drop_folder_path_subir_j,
-                        keep_folder_path_subir_j,
                         deployment_time,
                         pickup_time,
                         aru,
@@ -347,34 +343,6 @@ def trim(
                     for f in audio_files_i
                 )
                 action_list.append(results)
-
-                # Remove original directory after it is done
-                # if not copy_files:
-
-                # If directory is empty remove it
-                if (not os.listdir(dir_i)) & (not dry_run):
-                    os.rmdir(dir_i)
-
-
-                # If it is not empty, we could not process all files for some reason
-                else:
-                    if verbose:
-                        print(f'{"":<4} Could not process all files in {dir_i_name}.')
-                    if not dry_run:
-                        Path(not_processed_folder_path).mkdir(exist_ok=True)
-
-                    # Create card specific subdirs
-                    np_dir_i = os.path.join(not_processed_folder_path, dir_i_name)
-                    if not dry_run:
-                        Path(np_dir_i).mkdir(exist_ok=True)
-
-                    # Move not processed files
-                    for file_j in os.listdir(dir_i):
-                        if not dry_run:
-                            move_file(os.path.join(dir_i, file_j), np_dir_i)
-
-                    if not dry_run:
-                        os.rmdir(dir_i)
 
             else:
                 if verbose:
@@ -415,14 +383,13 @@ if __name__ == "__main__":
         recordings_sheet=cfg["deployment_sheet"],
         aru=cfg["aru_type"],
         folder_var=cfg["subdirectories_column"],
-        deployment_time_var=cfg["deployment_time_column"],
-        pickup_time_var=cfg["pickup_time_column"],
+        deployment_time_col=cfg["deployment_time_column"],
+        pickup_time_col=cfg["pickup_time_column"],
         subdirectories_column=cfg["subdirectories_column"],
         verbose=(not args.silent),
         time_str_format=cfg["datetime_format_str"],
-        audio_formats=cfg["audio_formats"],
-        gps_formats=cfg["gps_formats"],
-        delay_h=cfg["delay_hours"],
+        glob_patterns=cfg["glob_patterns"],
+        buffer_hours=cfg["buffer_hours"],
         dry_run=args.dry_run,
         parallel_jobs=cfg["parallel_jobs"],
     )

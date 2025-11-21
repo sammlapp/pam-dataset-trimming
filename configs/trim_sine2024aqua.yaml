@@ -14,11 +14,12 @@ subdirectories_column: card_code
 
 # Sheet date format
 datetime_format_str : '%m/%d/%y %H:%M'
-audio_formats: ['mp3', 'wav','WAV']
-gps_formats: ['PPS', 'pps', 'CSV', 'csv']
+
+# types of files to check for in/out of deployment period
+glob_patterns: ['*.mp3', '*.wav','*.WAV']
 
 # Add a delay in hours to deployment time and subtract from pickup time.
-delay_hours: null
+buffer_hours: null
 
 # Parallelize with Joblib.Parallel and delayed
 parallel_jobs: 8

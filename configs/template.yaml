@@ -1,0 +1,27 @@
+
+data_folder: "/path/to/dataset"
+
+# audio-moth or smm
+aru_type: audio-moth 
+
+# filename for deployment sheet in data_folder
+deployment_sheet: dataset_dpl_sheet.csv
+
+# Sheet column names
+pickup_time_column: pickup_date
+deployment_time_column: dropoff_date
+subdirectories_column: card_code
+
+# Format of date-time strings in the deployment sheet
+datetime_format_str : '%m/%d/%y %H:%M'
+
+# types of files to check for in/out of deployment period
+glob_patterns: ['*.mp3', '*.wav','*.WAV']
+# for GPSAudiomoth firmware, glob_patterns: ['*.WAV', '*.PPS', '*.CSV']
+
+# Add a delay in hours to deployment time and subtract from pickup time.
+buffer_hours: null
+
+# Parallelize with Joblib.Parallel and delayed
+# can use 8 no problem on snowy. 1 means no parallel processing.
+parallel_jobs: 8
